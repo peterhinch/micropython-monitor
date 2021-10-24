@@ -15,9 +15,11 @@ monitor.set_device(UART(2, 1_000_000))  # UART must be 1MHz
 
 trig = monitor.trigger(4)
 
+
 @monitor.asyn(1)
 async def foo(t):
     await asyncio.sleep_ms(t)
+
 
 @monitor.asyn(2)
 async def hog():
@@ -25,9 +27,11 @@ async def hog():
     trig()  # Hog start
     time.sleep_ms(500)
 
+
 @monitor.asyn(3)
 async def bar(t):
     await asyncio.sleep_ms(t)
+
 
 async def main():
     monitor.init()
@@ -37,6 +41,7 @@ async def main():
         asyncio.create_task(foo(100))
         await bar(150)
         await asyncio.sleep_ms(50)
+
 
 try:
     asyncio.run(main())

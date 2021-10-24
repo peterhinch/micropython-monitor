@@ -35,6 +35,7 @@ class Foo:
     def wait2(self):
         time.sleep_ms(10)
 
+
 async def main():
     monitor.init()
     asyncio.create_task(monitor.hog_detect())  # Make 10ms waitx gaps visible
@@ -47,6 +48,7 @@ async def main():
         await asyncio.sleep_ms(50)
         await foo2.pause()
         await asyncio.sleep_ms(50)
+
 
 try:
     asyncio.run(main())

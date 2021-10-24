@@ -17,6 +17,7 @@ monitor.set_device(UART(2, 1_000_000))  # UART must be 1MHz
 trig0 = monitor.trigger(0)
 twait = 20
 
+
 async def test():
     while True:
         await asyncio.sleep_ms(100)
@@ -24,16 +25,19 @@ async def test():
         await asyncio.sleep_ms(twait)
         trig0(False)
 
+
 async def lengthen():
     global twait
     while twait < 200:
         twait += 1
         await asyncio.sleep(1)
 
+
 async def main():
     monitor.init()
     asyncio.create_task(lengthen())
     await test()
+
 
 try:
     asyncio.run(main())

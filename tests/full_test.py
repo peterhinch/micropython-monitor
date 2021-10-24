@@ -12,7 +12,8 @@ import monitor
 trig = monitor.trigger(4)
 # Define interface to use
 monitor.set_device(UART(2, 1_000_000))  # UART must be 1MHz
-#monitor.set_device(SPI(2, baudrate=5_000_000), Pin('X1', Pin.OUT))  # SPI suggest >= 1MHz
+# monitor.set_device(SPI(2, baudrate=5_000_000), Pin('X1', Pin.OUT))  # SPI suggest >= 1MHz
+
 
 @monitor.asyn(1, 3)
 async def forever():
@@ -39,7 +40,7 @@ async def main():
             tasks.pop().cancel()
             await asyncio.sleep_ms(100)
         await asyncio.sleep_ms(100)
-        
+
 
 try:
     asyncio.run(main())

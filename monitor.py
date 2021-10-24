@@ -9,6 +9,7 @@ from machine import UART, SPI, Pin
 from time import sleep_us
 from sys import exit
 
+buf = bytearray(1)  # Pre-allocate UART/SPI buffer
 # Quit with an error message rather than throw.
 def _quit(s):
     print("Monitor " + s)
@@ -25,13 +26,19 @@ def set_device(dev, cspin=None):
     global _write
     global _ifrst
     if isinstance(dev, UART) and cspin is None:  # UART
-        _write = dev.write
+
+        def uwrite(data):
+            buf[0] = data
+            dev.write(buf)
+
+        _write = uwrite
     elif isinstance(dev, SPI) and isinstance(cspin, Pin):
         cspin(1)
 
         def spiwrite(data):
             cspin(0)
-            dev.write(data)
+            buf[0] = data
+            dev.write(buf)
             cspin(1)
 
         _write = spiwrite
@@ -70,27 +77,24 @@ def _validate(ident, num=1, looping=False):
 
 
 # asynchronous monitor
-def asyn(n, max_instances=1, verbose=True, looping=False):
+def asyn(ident, max_instances=1, verbose=True, looping=False):
     def decorator(coro):
-        _validate(n, max_instances, looping)
+        _validate(ident, max_instances, looping)
         instance = 0
 
         async def wrapped_coro(*args, **kwargs):
             nonlocal instance
-            d = 0x40 + n + min(instance, max_instances - 1)
-            v = int.to_bytes(d, 1, "big")
+            d = 0x40 + ident + min(instance, max_instances - 1)
             instance += 1
             if verbose and instance > max_instances:  # Warning only.
-                print("Monitor ident: {:02d} instances: {}.".format(n, instance))
-            _write(v)
+                print("Monitor ident: {:02d} instances: {}.".format(ident, instance))
+            _write(d)
             try:
                 res = await coro(*args, **kwargs)
             except asyncio.CancelledError:
                 raise  # Other exceptions produce traceback.
             finally:
-                d |= 0x20
-                v = int.to_bytes(d, 1, "big")
-                _write(v)
+                _write(d | 0x20)
                 instance -= 1
             return res
 
@@ -103,11 +107,11 @@ def asyn(n, max_instances=1, verbose=True, looping=False):
 # crashing. It does this by sending a byte with CS\ False (high).
 def init():
     _ifrst()  # Reset interface. Does nothing if UART.
-    _write(b"z")  # Clear Pico's instance counters etc.
+    _write(ord("z"))  # Clear Pico's instance counters etc.
 
 
 # Optionally run this to show up periods of blocking behaviour
-async def hog_detect(s=(b"\x40", b"\x60")):
+async def hog_detect(s=(0x40, 0x60)):
     while True:
         for v in s:
             _write(v)
@@ -118,13 +122,11 @@ async def hog_detect(s=(b"\x40", b"\x60")):
 def sync(ident, looping=False):
     def decorator(func):
         _validate(ident, 1, looping)
-        vstart = int.to_bytes(0x40 + ident, 1, "big")
-        vend = int.to_bytes(0x60 + ident, 1, "big")
 
         def wrapped_func(*args, **kwargs):
-            _write(vstart)
+            _write(0x40 + ident)
             res = func(*args, **kwargs)
-            _write(vend)
+            _write(0x60 + ident)
             return res
 
         return wrapped_func
@@ -134,34 +136,31 @@ def sync(ident, looping=False):
 
 # Monitor a function call
 class mon_call:
-    def __init__(self, n):
+    def __init__(self, ident):
         # looping: a CM may be instantiated many times
-        _validate(n, 1, True)
-        self.vstart = int.to_bytes(0x40 + n, 1, "big")
-        self.vend = int.to_bytes(0x60 + n, 1, "big")
+        _validate(ident, 1, True)
+        self.ident = ident
 
     def __enter__(self):
-        _write(self.vstart)
+        _write(0x40 + self.ident)
         return self
 
     def __exit__(self, type, value, traceback):
-        _write(self.vend)
+        _write(0x60 + self.ident)
         return False  # Don't silence exceptions
 
 
 # Either cause pico ident n to produce a brief (~80μs) pulse or turn it
 # on or off on demand. No looping: docs suggest instantiating at start.
-def trigger(n):
-    _validate(n)
-    on = int.to_bytes(0x40 + n, 1, "big")
-    off = int.to_bytes(0x60 + n, 1, "big")
+def trigger(ident):
+    _validate(ident)
 
     def wrapped(state=None):
         if state is None:
-            _write(on)
+            _write(0x40 + ident)
             sleep_us(20)
-            _write(off)
+            _write(0x60 + ident)
         else:
-            _write(on if state else off)
+            _write(ident + (0x40 if state else 0x60))
 
     return wrapped

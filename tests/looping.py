@@ -31,12 +31,14 @@ class Foo:
             # ident 1/2 low
 
     async def bar(self):
-        @monitor.asyn(3, looping = True)
+        @monitor.asyn(3, looping=True)
         async def wait1():
             await asyncio.sleep_ms(100)
+
         @monitor.sync(4, True)
         def wait2():
             time.sleep_ms(10)
+
         trig()
         await wait1()
         trig()
@@ -51,6 +53,7 @@ async def main():
         await foo.bar()
         await asyncio.sleep_ms(100)
     await foo.pause()
+
 
 try:
     asyncio.run(main())
