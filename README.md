@@ -34,6 +34,11 @@ to demonstrate that this never exceeded 5ms.
 
 ![Image](./images/monitor_gc.jpg)
 
+### RP2 caveat
+
+Due to [this issue](https://github.com/micropython/micropython/issues/7977) the
+monitoring of dual-core applications on the Pico is unreliable.
+
 ## 1.1 Concepts
 
 Communication with the Pico may be by UART or SPI, and is uni-directional from
