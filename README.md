@@ -34,10 +34,13 @@ to demonstrate that this never exceeded 5ms.
 
 ![Image](./images/monitor_gc.jpg)
 
-### RP2 caveat
+### Threaded and RP2 dual core applications
+
+In testing threaded code running on a Pyboard the monitor worked correctly.
 
 Due to [this issue](https://github.com/micropython/micropython/issues/7977) the
-monitoring of dual-core applications on the Pico is unreliable.
+monitoring of dual-core applications on the Pico is unreliable, both in UART
+and SPI modes.
 
 ## 1.1 Concepts
 
