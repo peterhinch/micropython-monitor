@@ -36,9 +36,8 @@ to demonstrate that this never exceeded 5ms.
 
 ### Threaded and RP2 dual core applications
 
-In testing threaded code running on a Pyboard the monitor worked correctly.
-
-Due to [this issue](https://github.com/micropython/micropython/issues/7977) the
+In testing threaded code running on a Pyboard the monitor worked correctly. Due
+to [this issue](https://github.com/micropython/micropython/issues/7977) the
 monitoring of dual-core applications on the Pico is unreliable, both in UART
 and SPI modes.
 
@@ -48,7 +47,7 @@ Communication with the Pico may be by UART or SPI, and is uni-directional from
 DUT to Pico. If a UART is used only one GPIO pin is needed. SPI requires three,
 namely `mosi`, `sck` and `cs/`.
 
-The Pico runs the following:
+The Pico runs `monitor_pico.py` typically invoked with:
 ```python
 from monitor_pico import run
 run()  # or run(device="spi")
@@ -70,8 +69,8 @@ async def test():
 ```
 A decorator may be inserted prior to a function definition; in `uasyncio` code
 a coroutine definition may be decorated. These cause a Pico pin to go high for
-the duration whenever the function or coroutine runs. Other mechanisms exist
-with means of measuring cpu hogging.
+the duration whenever the function or coroutine runs. Other mechanisms offer
+means of measuring cpu hogging.
 
 The Pico can output a trigger pulse on GPIO28 which may be used to trigger a
 scope or logic analyser. This can be configured to occur when excessive latency
@@ -84,8 +83,7 @@ The DUT and the Pico must run firmware V1.17 or later.
 
 ## 1.3 Installation
 
-The file `monitor.py` must be copied to the DUT filesystem. `monitor_pico.py`
-is copied to the Pico.
+Copy `monitor.py` to the DUT filesystem. Copy `monitor_pico.py` to the Pico.
 
 ## 1.4 UART connection
 
@@ -141,20 +139,22 @@ This example assumes a UART connection. On the Pico issue:
 from monitor_pico import run
 run()
 ```
-The Pico should issue "Awaiting communication."  
-Adapt the following to match the UART to be used on the DUT and run it.
+The Pico should issue "Awaiting communication."
+
+On the DUT some boilerplate code must be added to the application to enable
+monitoring. Lines labelled MANDATORY represent this added code.
 ```python
 import uasyncio as asyncio
-from machine import UART  # Using a UART for monitoring
-import monitor
-monitor.set_device(UART(2, 1_000_000))  # Baudrate MUST be 1MHz.
+from machine import UART  # MANDATORY Use a UART for monitoring
+import monitor  # MANDATORY
+monitor.set_device(UART(2, 1_000_000))  # MANDATORY Baudrate MUST be 1MHz.
 
 @monitor.asyn(1)  # Assign ident 1 to foo (GPIO 4)
 async def foo():
     await asyncio.sleep_ms(100)
 
 async def main():
-    monitor.init()  # Initialise Pico state at the start of every run
+    monitor.init()  # MANDATORY Initialise Pico state at the start of every run
     while True:
         await foo()  # Pico GPIO4 will go high for duration
         await asyncio.sleep_ms(100)
@@ -288,11 +288,11 @@ The following features may be used to characterise synchronous or asynchronous
 applications by causing Pico pin changes at specific points in code execution.
 
 The following are provided:  
- * A `sync` decorator for synchronous functions or methods: like `async` it
+ * A `sync` decorator for synchronous functions or methods: like `asyn` it
  monitors every call to the function.
  * A `mon_call` context manager enables function monitoring to be restricted to
  specific calls.
- * A `trigger` function which issues a brief pulse on the Pico or can set and
+ * A `trigger` closure which issues a brief pulse on the Pico or can set and
  clear the pin on demand.
 
 ## 4.1 The sync decorator
@@ -486,7 +486,7 @@ from monitor_pico import run, WIDTH
 run((20, WIDTH))  # Ignore widths < 20ms. 
 ```
 Assuming that ident 0 is used as described in
-[section 5.5](./README.md#55-timing-of-code-segments) a trigger pulse on GPIO28
+[section 4.4](./README.md#44-timing-of-code-segments) a trigger pulse on GPIO28
 will occur each time the time taken exceeds both 20ms and its prior maximum. A
 message with the actual width is also printed whenever this occurs.
 

@@ -89,7 +89,7 @@ WIDTH = const(3)
 # LATE: pulse when outage ends. Report at outage end.
 # MAX: pulse when outage exceeds prior maximum. Report only in that instance.
 # WIDTH: for measuring time between arbitrary points in code. When duration
-# between 0x40 and 0x60 exceeds previosu max, pulse and report.
+# between 0x40 and 0x60 exceeds previous max, pulse and report.
 
 # native reduced latency to 10μs but killed the hog detector: timer never timed out.
 # Also locked up Pico so ctrl-c did not interrupt.
