@@ -27,7 +27,7 @@ Limitations:
  1. No realtime display: the device captures a set of samples which may then be
  displayed.
 
-User interface:
+User interface:  
 ![Image](./images/la_ui.jpg)
 
 This shows a capture of data from a realtime system.
