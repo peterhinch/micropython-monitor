@@ -1,5 +1,5 @@
 # quick_test.py
-# Tests the monitoring of deliberate CPU hgging.
+# Tests the monitoring of deliberate CPU hogging.
 
 # Copyright (c) 2021 Peter Hinch
 # Released under the MIT License (MIT) - see LICENSE file
