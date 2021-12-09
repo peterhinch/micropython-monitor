@@ -12,6 +12,12 @@ the behaviour of the DUT by pin changes and optional print statements. A logic
 analyser or scope provides a view of the realtime behaviour of the code.
 Valuable information can also be gleaned at the Pico command line.
 
+An [analyser back-end](./ANALYSER.md) is provided for users lacking a logic
+analyser or multi-channel scope. A Pico and a cheap display emulates a logic
+analyser style display. I'm unsure whether this has practical application: I
+suspect most asynchronous coders already have test gear. The rest of this
+document describes use with a logic analyser.
+
 Where an application runs multiple concurrent tasks it can be difficult to
 identify a task which is hogging CPU time. Long blocking periods can also occur
 when several tasks each block for a period. If these happen to be scheduled in
@@ -20,12 +26,6 @@ intervals. To capture these events the monitor issues a trigger pulse when the
 blocking period exceeds a threshold. The threshold can be a fixed time or the
 current maximum blocking period. A logic analyser enables the state at the time
 of the transient event to be examined.
-
-I have an [experimental back-end](./ANALYSER.md) for users lacking a logic
-analyser or multi-channel scope. I'm unsure whether to complete this project:
-maybe most asynchronous coders already have test gear. If it is of interest
-please let me know via an issue or a comment on
-[this forum thread](https://forum.micropython.org/viewtopic.php?f=15&t=11158).
 
 This image shows the detection of CPU hogging. In this example a task hogs the
 CPU for 500ms, causing the scheduler to be unable to schedule other tasks. A
