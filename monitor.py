@@ -19,7 +19,7 @@ try:
     _release = _lock.release
 except ImportError:  # Only source of hard concurrency is IRQ
 
-    def _acquire():
+    def _acquire():  # Crude blocking lock. Held only for short periods.
         global _lck
         istate = disable_irq()
         while _lck:
@@ -32,10 +32,9 @@ except ImportError:  # Only source of hard concurrency is IRQ
         _lck = False
 
 
-buf = bytearray(1)  # Pre-allocate UART/SPI buffer
 # Quit with an error message rather than throw.
 def _quit(s):
-    print("Monitor " + s)
+    print("Monitor", s)
     exit(0)
 
 
@@ -46,11 +45,10 @@ _ifrst = lambda: None  # Reset interface. If UART do nothing.
 # For SPI pass initialised instance SPI. Can be any baudrate, but
 # must be default in other respects.
 def set_device(dev, cspin=None):
-    global _write
-    global _ifrst
+    global _write, _ifrst
     if isinstance(dev, UART) and cspin is None:  # UART
 
-        def uwrite(data):
+        def uwrite(data, buf=bytearray(1)):
             _acquire()
             buf[0] = data
             dev.write(buf)
@@ -60,7 +58,7 @@ def set_device(dev, cspin=None):
     elif isinstance(dev, SPI) and isinstance(cspin, Pin):
         cspin(1)
 
-        def spiwrite(data):
+        def spiwrite(data, buf=bytearray(1)):
             _acquire()
             buf[0] = data
             cspin(0)
@@ -79,30 +77,29 @@ def set_device(dev, cspin=None):
         _quit("set_device: invalid args.")
 
 
-# /mnt/qnap2/data/Projects/Python/AssortedTechniques/decorators
-_available = set(range(0, 22))  # Valid idents are 0..21
+# Valid idents are 0..21
 # Looping: some idents may be repeatedly instantiated. This can occur
 # if decorator is run in looping code. A CM is likely to be used in a
 # loop. In these cases only validate on first use.
-_loopers = set()
 
 
-def _validate(ident, num=1, looping=False):
+def _validate(ident, num=1, looping=False, loopers=set(), available=set(range(0, 22))):
     if ident >= 0 and ident + num < 22:
         try:
             for x in range(ident, ident + num):
                 if looping:
-                    if x not in _loopers:
-                        _available.remove(x)
-                        _loopers.add(x)
+                    if x not in loopers:
+                        available.remove(x)
+                        loopers.add(x)
                 else:
-                    _available.remove(x)
+                    available.remove(x)
         except KeyError:
             _quit("error - ident {:02d} already allocated.".format(x))
     else:
         _quit("error - ident {:02d} out of range.".format(ident))
 
 
+# /mnt/qnap2/data/Projects/Python/AssortedTechniques/decorators
 # asynchronous monitor
 def asyn(ident, max_instances=1, verbose=True, looping=False):
     def decorator(coro):
