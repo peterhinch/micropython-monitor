@@ -2,7 +2,7 @@
 # Tests case where a trigger is operated in a hard ISR.
 # This test is Pyboard specific.
 
-# Copyright (c) 2021 Peter Hinch
+# Copyright (c) 2021-2022 Peter Hinch
 # Released under the MIT License (MIT) - see LICENSE file
 
 
@@ -12,7 +12,7 @@ from pyb import Timer
 import monitor
 
 
-monitor.set_device(UART(2, 1_000_000))  # UART must be 1MHz
+monitor.set_device(UART(2, 1_000_000))  # UART must be 1MHz. O/P on X3
 trig1 = monitor.trigger(1)
 trig2 = monitor.trigger(2)
 

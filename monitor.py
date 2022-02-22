@@ -1,13 +1,36 @@
 # monitor.py
 # Monitor an asynchronous program by sending single bytes down an interface.
 
-# Copyright (c) 2021 Peter Hinch
+# Copyright (c) 2021-2022 Peter Hinch
 # Released under the MIT License (MIT) - see LICENSE file
+# V0.2 Supports monitoring dual-core applications on RP2
 
 import uasyncio as asyncio
-from machine import UART, SPI, Pin
+from machine import UART, SPI, Pin, disable_irq, enable_irq
 from time import sleep_us
 from sys import exit
+
+_lck = False
+try:
+    import _thread
+
+    _lock = _thread.allocate_lock()
+    _acquire = _lock.acquire
+    _release = _lock.release
+except ImportError:  # Only source of hard concurrency is IRQ
+
+    def _acquire():
+        global _lck
+        istate = disable_irq()
+        while _lck:
+            pass
+        _lck = True
+        enable_irq(istate)
+
+    def _release():
+        global _lck
+        _lck = False
+
 
 buf = bytearray(1)  # Pre-allocate UART/SPI buffer
 # Quit with an error message rather than throw.
@@ -28,18 +51,22 @@ def set_device(dev, cspin=None):
     if isinstance(dev, UART) and cspin is None:  # UART
 
         def uwrite(data):
+            _acquire()
             buf[0] = data
             dev.write(buf)
+            _release()
 
         _write = uwrite
     elif isinstance(dev, SPI) and isinstance(cspin, Pin):
         cspin(1)
 
         def spiwrite(data):
-            cspin(0)
+            _acquire()
             buf[0] = data
+            cspin(0)
             dev.write(buf)
             cspin(1)
+            _release()
 
         _write = spiwrite
 

@@ -42,10 +42,11 @@ to demonstrate that this never exceeded 5ms.
 
 ### Threaded and RP2 dual core applications
 
-In testing threaded code running on a Pyboard the monitor worked correctly. Due
-to [this issue](https://github.com/micropython/micropython/issues/7977) the
-monitoring of dual-core applications on the Pico is unreliable, both in UART
-and SPI modes.
+The monitor is designed to work with asynchronous systems based on `uasyncio`,
+threading and interrupts. It also supports dual-core applications on RP2,
+subject to this proviso. At the time of writing (Feb 2022)
+[this PR](https://github.com/micropython/micropython/pull/8310) is required for
+reliable operation of dual-core applications on the Pico.
 
 ## 1.1 Concepts
 
