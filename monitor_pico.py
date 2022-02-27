@@ -92,7 +92,8 @@ WIDTH = const(3)
 # between 0x40 and 0x60 exceeds previous max, pulse and report.
 
 # native reduced latency to 10μs but killed the hog detector: timer never timed out.
-# Also locked up Pico so ctrl-c did not interrupt.
+# Also locked up Pico so ctrl-c did not interrupt. I think this is an ARMV6 issue
+# https://github.com/micropython/micropython/issues/7616#issuecomment-894002358
 # @micropython.native
 def run(period=100, verbose=(), device="uart", vb=True):
     if isinstance(period, int):
