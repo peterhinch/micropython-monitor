@@ -43,10 +43,8 @@ to demonstrate that this never exceeded 5ms.
 ### Threaded and RP2 dual core applications
 
 The monitor is designed to work with asynchronous systems based on `uasyncio`,
-threading and interrupts. It also supports dual-core applications on RP2,
-subject to this proviso. At the time of writing (Feb 2022)
-[this PR](https://github.com/micropython/micropython/pull/8310) is required for
-reliable operation of dual-core applications on the Pico.
+threading and interrupts. It also supports dual-core applications on RP2, but
+the device under test should run firmware V1.19 or later.
 
 ## 1.1 Concepts
 
