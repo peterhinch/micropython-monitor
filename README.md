@@ -92,12 +92,14 @@ Copy `monitor.py` to the DUT filesystem. Copy `monitor_pico.py` to the Pico.
 
 ## 1.4 UART connection
 
-Wiring:
+Wiring. Pins for the DUT are not specified as there are many MicroPython
+platforms and any UART may be used. Pins are those on the Pico performing the
+monitoring.
 
-| DUT | GPIO | Pin |
-|:---:|:----:|:---:|
-| Gnd | Gnd  |  3  |
-| txd | 1    |  2  |
+| DUT | Pico GPIO | Pico Pin | Pico signal |
+|:---:|:----------|:---------|:------------|
+| Gnd | Gnd       |  3       | Gnd         |
+| txd | 1         |  2       | Uart 0 Rxd  |
 
 The DUT is configured to use a UART by passing an initialised UART with 1MHz
 baudrate to `monitor.set_device`:
