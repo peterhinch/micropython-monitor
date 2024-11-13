@@ -1,11 +1,11 @@
 # monitor.py
 # Monitor an asynchronous program by sending single bytes down an interface.
 
-# Copyright (c) 2021-2022 Peter Hinch
+# Copyright (c) 2021-2024 Peter Hinch
 # Released under the MIT License (MIT) - see LICENSE file
 # V0.2 Supports monitoring dual-core applications on RP2
 
-import uasyncio as asyncio
+import asyncio
 from machine import UART, SPI, Pin, disable_irq, enable_irq
 from time import sleep_us
 from sys import exit

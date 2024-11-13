@@ -3,7 +3,7 @@
 # 1. A monitor for realtime MicroPython code
 
 This library provides a means of examining the behaviour of a running system.
-It was initially designed to characterise `uasyncio` programs but may also be
+It was initially designed to characterise `asyncio` programs but may also be
 used to study any code whose behaviour may change dynamically such as threaded
 code or applications using interrupts.
 
@@ -13,10 +13,13 @@ analyser or scope provides a view of the realtime behaviour of the code.
 Valuable information can also be gleaned at the Pico command line.
 
 An [analyser back-end](./ANALYSER.md) is provided for users lacking a logic
-analyser or multi-channel scope. A Pico and a cheap display emulates a logic
-analyser style display. I'm unsure whether this has practical application: I
-suspect most asynchronous coders already have test gear. The rest of this
-document describes use with a logic analyser.
+analyser or multi-channel scope:  
+![Image](./images/la_ui.jpg)
+
+A Pico and a cheap display emulates a logic analyser style display. I'm unsure
+whether this has practical application: I suspect most asynchronous coders
+already have test gear. The rest of this document describes use with a logic
+analyser.
 
 Where an application runs multiple concurrent tasks it can be difficult to
 identify a task which is hogging CPU time. Long blocking periods can also occur
@@ -42,7 +45,7 @@ to demonstrate that this never exceeded 5ms.
 
 ### Threaded and RP2 dual core applications
 
-The monitor is designed to work with asynchronous systems based on `uasyncio`,
+The monitor is designed to work with asynchronous systems based on `asyncio`,
 threading and interrupts. It also supports dual-core applications on RP2, but
 the device under test should run firmware V1.19 or later.
 
@@ -72,7 +75,7 @@ async def test():
         await asyncio.sleep_ms(100)
         trig1()  # Pulse appears now
 ```
-A decorator may be inserted prior to a function definition; in `uasyncio` code
+A decorator may be inserted prior to a function definition; in `asyncio` code
 a coroutine definition may be decorated. These cause a Pico pin to go high for
 the duration whenever the function or coroutine runs. Other mechanisms offer
 means of measuring cpu hogging.
@@ -151,7 +154,7 @@ The Pico should issue "Awaiting communication."
 On the DUT some boilerplate code must be added to the application to enable
 monitoring. Lines labelled MANDATORY represent this added code.
 ```python
-import uasyncio as asyncio
+import asyncio as asyncio
 from machine import UART  # MANDATORY Use a UART for monitoring
 import monitor  # MANDATORY
 monitor.set_device(UART(2, 1_000_000))  # MANDATORY Baudrate MUST be 1MHz.
@@ -209,7 +212,7 @@ Re-using idents would lead to confusing behaviour. If an ident is out of range
 or is assigned to more than one coroutine an error message is printed and
 execution terminates.
 
-# 3. Monitoring uasyncio code
+# 3. Monitoring asyncio code
 
 ## 3.1 Monitoring coroutines
 
@@ -275,7 +278,7 @@ scheduler. It will therefore be scheduled in round-robin fashion at speed. If
 long gaps appear in the pulses on GPIO3, other tasks are hogging the CPU.
 Usage of this is optional. To use, issue
 ```python
-import uasyncio as asyncio
+import asyncio as asyncio
 import monitor
 # code omitted
 asyncio.create_task(monitor.hog_detect())
@@ -490,7 +493,7 @@ run((1, MAX))
 This may be done by issuing:
 ```python
 from monitor_pico import run, WIDTH
-run((20, WIDTH))  # Ignore widths < 20ms. 
+run((20, WIDTH))  # Ignore widths < 20ms.
 ```
 Assuming that ident 0 is used as described in
 [section 4.4](./README.md#44-timing-of-code-segments) a trigger pulse on GPIO28
@@ -512,7 +515,7 @@ detect" trigger 100ms after hogging starts.
 `full_test.py` Tests task timeout and cancellation, also the handling of
 multiple task instances. If the Pico is run with `run((1, MAX))` it reveals
 the maximum time the DUT hogs the CPU. On a Pyboard D I measured 5ms.
- 
+
 The sequence here is a trigger is issued on ident 4. The task on ident 1 is
 started, but times out after 100ms. 100ms later, five instances of the task on
 ident 1 are started, at 100ms intervals. They are then cancelled at 100ms
@@ -552,7 +555,7 @@ Using a UART the latency between a monitored coroutine starting to run and the
 Pico pin going high is about 23μs. With SPI I measured -12μs. This isn't as
 absurd as it sounds: a negative latency is the effect of the decorator which
 sends the character before the coroutine starts. These values are small in the
-context of `uasyncio`: scheduling delays are on the order of 150μs or greater
+context of `asyncio`: scheduling delays are on the order of 150μs or greater
 depending on the platform. See `tests/latency.py` for a way to measure latency.
 
 The use of decorators eases debugging: they are readily turned on and off by
@@ -566,7 +569,7 @@ Symbols transmitted by the UART are printable ASCII characters to ease
 debugging. A single byte protocol simplifies and speeds the Pico code.
 
 The baudrate of 1Mbps was chosen to minimise latency (10μs per character is
-fast in the context of uasyncio). It also ensures that tasks like `hog_detect`,
+fast in the context of asyncio). It also ensures that tasks like `hog_detect`,
 which can be scheduled at a high rate, can't overflow the UART buffer. The
 1Mbps rate seems widely supported.
 

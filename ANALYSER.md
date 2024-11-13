@@ -22,7 +22,7 @@ Key features are:
  3. Timing measurements may be made using a pair of cursors.
  4. Data may be sideways-scrolled using the encoder.
  5. Zoom in and out buttons.
- 
+
 Limitations:
  1. No realtime display: the device captures a set of samples which may then be
  displayed.
@@ -39,9 +39,11 @@ cursors visible.
 I developed this from a sense of curiosity as to whether it could be done on a
 Pico. It works but with some rough edges around the user interface. I remain
 unconvinced if it has any practical application: its only merit compared with a
-logic analyser is low cost and Saleae clones can be bought very cheaply. The
-example I have cannot display pre-trigger information which makes it almost
-useless in this application, prompting me to buy the real thing.
+logic analyser is low cost. Saleae clones can be bought cheaply however the
+example I have cannot display pre-trigger information making it almost useless.
+If a device crashes you want to see events in the run-up to the crash. This
+project does provide pre-trigger data. A genuine Saleae is a highly capable
+device - if you can justfy the cost.
 
 I don't intend to put any more effort into this unless serious interest is
 expressed.
@@ -141,7 +143,7 @@ greyed-out and unavailable.
 
 ## Acquisition and Triggering
 
-Trigger conditions are associated with channel 0. 
+Trigger conditions are associated with channel 0.
 
 When the `Acquire` button is pressed, incoming events are buffered until either
 a trigger condition occurs or the `Next` physical button is pressed. Thus `Next`

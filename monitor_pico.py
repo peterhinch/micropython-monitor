@@ -1,7 +1,8 @@
 # monitor_pico.py
 # Runs on a Raspberry Pico board to receive data from monitor.py
+# Firmware should be V1.20 or later
 
-# Copyright (c) 2021 Peter Hinch
+# Copyright (c) 2021-2024 Peter Hinch
 # Released under the MIT License (MIT) - see LICENSE file
 
 # Device gets a single ASCII byte defining the pin number and whether
@@ -91,10 +92,8 @@ WIDTH = const(3)
 # WIDTH: for measuring time between arbitrary points in code. When duration
 # between 0x40 and 0x60 exceeds previous max, pulse and report.
 
-# native reduced latency to 10μs but killed the hog detector: timer never timed out.
-# Also locked up Pico so ctrl-c did not interrupt. I think this is an ARMV6 issue
-# https://github.com/micropython/micropython/issues/7616#issuecomment-894002358
-# @micropython.native
+# native reduced latency to 10μs
+@micropython.native
 def run(period=100, verbose=(), device="uart", vb=True):
     if isinstance(period, int):
         t_ms = period
