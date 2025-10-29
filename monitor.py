@@ -84,7 +84,7 @@ def set_device(dev, cspin=None):
 
 
 def _validate(ident, num=1, looping=False, loopers=set(), available=set(range(0, 22))):
-    if ident >= 0 and ident + num < 22:
+    if ident >= 0 and ident + num <= 22:
         try:
             for x in range(ident, ident + num):
                 if looping:
@@ -129,17 +129,20 @@ def asyn(ident, max_instances=1, verbose=True, looping=False):
 
 # If SPI, clears the state machine in case prior test resulted in the DUT
 # crashing. It does this by sending a byte with CS\ False (high).
-def init():
+def init(hog_detect=False):
+    # Optionally run hog detection to show up periods of blocking behaviour
+    async def hd(s=(0x40, 0x60)):
+        while True:
+            for v in s:
+                _write(v)
+                await asyncio.sleep_ms(0)
+
     _ifrst()  # Reset interface. Does nothing if UART.
     _write(ord("z"))  # Clear Pico's instance counters etc.
-
-
-# Optionally run this to show up periods of blocking behaviour
-async def hog_detect(s=(0x40, 0x60)):
-    while True:
-        for v in s:
-            _write(v)
-            await asyncio.sleep_ms(0)
+    if hog_detect:
+        if asyncio.current_task is None:
+            print("Warning: attempt to run hog_detect before asyncio started.")
+        asyncio.create_task(hd())
 
 
 # Monitor a synchronous function definition
@@ -158,8 +161,8 @@ def sync(ident, looping=False):
     return decorator
 
 
-# Monitor a function call
-class mon_call:
+# Monitor using a context manager
+class Monitor:
     def __init__(self, ident):
         # looping: a CM may be instantiated many times
         _validate(ident, 1, True)
@@ -173,6 +176,8 @@ class mon_call:
         _write(0x60 + self.ident)
         return False  # Don't silence exceptions
 
+
+mon_call = Monitor  # Old version
 
 # Either cause pico ident n to produce a brief (~80μs) pulse or turn it
 # on or off on demand. No looping: docs suggest instantiating at start.

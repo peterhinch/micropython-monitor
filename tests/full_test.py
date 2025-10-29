@@ -5,7 +5,7 @@
 
 # Tests monitoring of timeout, task cancellation and multiple instances.
 
-import uasyncio as asyncio
+import asyncio
 from machine import Pin, UART, SPI
 import monitor
 
@@ -22,8 +22,7 @@ async def forever():
 
 
 async def main():
-    monitor.init()
-    asyncio.create_task(monitor.hog_detect())  # Watch for gc dropouts on ID0
+    monitor.init(True)  # Run hog_detect task
     while True:
         trig()
         try:

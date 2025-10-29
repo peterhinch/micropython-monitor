@@ -6,7 +6,7 @@
 # Released under the MIT License (MIT) - see LICENSE file
 
 
-import uasyncio as asyncio
+import asyncio
 from machine import Pin, UART, SPI
 from pyb import Timer
 import monitor

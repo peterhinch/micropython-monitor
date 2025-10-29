@@ -4,7 +4,7 @@
 # Copyright (c) 2021 Peter Hinch
 # Released under the MIT License (MIT) - see LICENSE file
 
-import uasyncio as asyncio
+import asyncio
 import time
 from machine import Pin, UART, SPI
 import monitor
@@ -46,8 +46,7 @@ class Foo:
 
 
 async def main():
-    monitor.init()
-    asyncio.create_task(monitor.hog_detect())  # Make 10ms waitx gaps visible
+    monitor.init(True)  # Run hog_detect task. Make 10ms waitx gaps visible.
     foo = Foo()
     while True:
         await foo.bar()

@@ -4,7 +4,7 @@
 # Copyright (c) 2021 Peter Hinch
 # Released under the MIT License (MIT) - see LICENSE file
 
-import uasyncio as asyncio
+import asyncio
 import time
 from machine import Pin, UART, SPI
 import monitor
@@ -34,8 +34,7 @@ async def bar(t):
 
 
 async def main():
-    monitor.init()
-    asyncio.create_task(monitor.hog_detect())
+    monitor.init(True)  # Run hog_detect task
     asyncio.create_task(hog())  # Will hog for 500ms after 5 secs
     while True:
         asyncio.create_task(foo(100))

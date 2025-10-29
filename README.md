@@ -3,17 +3,17 @@
 # 1. A monitor for realtime MicroPython code
 
 This library provides a means of examining the behaviour of a running system.
-It was initially designed to characterise `asyncio` programs but may also be
-used to study any code whose behaviour may change dynamically such as threaded
-code or applications using interrupts.
+It is intended for profiling code whose behaviour may change dynamically such as
+`asyncio` applications, threaded code or applications using interrupts.
 
-The device under test (DUT) is linked to a Raspberry Pico. The latter displays
-the behaviour of the DUT by pin changes and optional print statements. A logic
-analyser or scope provides a view of the realtime behaviour of the code.
-Valuable information can also be gleaned at the Pico command line.
+The device under test (DUT) is linked to a Raspberry Pico. The latter runs a
+module from this repo which displays the behaviour of the DUT by pin changes and
+optional print statements. A view of the realtime behaviour of the code may be
+acquired with a logic analyser or scope; in the absence of test gear valuable
+information can be gleaned at the Pico command line.
 
-An [analyser back-end](./ANALYSER.md) is provided for users lacking a logic
-analyser or multi-channel scope:  
+Code for an [analyser back-end](./ANALYSER.md) is provided for users lacking a
+logic analyser or multi-channel scope:  
 ![Image](./images/la_ui.jpg)
 
 A Pico and a cheap display emulates a logic analyser style display. I'm unsure
@@ -82,12 +82,12 @@ means of measuring cpu hogging.
 
 The Pico can output a trigger pulse on GPIO28 which may be used to trigger a
 scope or logic analyser. This can be configured to occur when excessive latency
-arises or when a segment of code runs unusually slowly. This helps identify the
-cause of the problem.
+arises or when a segment of code runs unusually slowly. If the LA displays
+pre-trigger information the cause of the problem can be isolated.
 
 ## 1.2 Pre-requisites
 
-The DUT and the Pico must run firmware V1.17 or later.
+The DUT must run firmware V1.19 or later. The Pico must run V1.20 or later.
 
 ## 1.3 Installation
 
@@ -112,7 +112,11 @@ from machine import UART
 import monitor
 monitor.set_device(UART(2, 1_000_000))  # Baudrate MUST be 1MHz.
 ```
-The Pico `run()` command assumes a UART by default.
+The Pico `run()` command assumes a UART by default, invoked as follows:
+```python
+from monitor_pico import run
+run()
+```
 
 ## 1.5 SPI connection
 
@@ -139,7 +143,8 @@ bus with other devices, although I haven't tested this.
 
 The Pico should be started with
 ```python
-monitor_pico.run(device="spi")
+from monitor_pico import run
+run(device="spi")
 ```
 
 ## 1.6 Quick start
@@ -180,6 +185,21 @@ period 200ms should be observed on Pico GPIO 4 (pin 6).
 Example script `quick_test.py` provides a usage example. It may be adapted to
 use a UART or SPI interface: see commented-out code.
 
+## 1.7 monitor.py module methods
+
+Initialisation:
+
+* `set_device(dev, cspin=None)` Define interface to Pic: UART or SPI.
+* `init(hog_detect=False)` Reset the monitor status.
+
+Running (`0 <= ident <=21`):
+
+* `Monitor(ident)` Create a context manager to monitor a code block.
+* `trigger(ident)` Create a trigger instance.
+* `sync(ident, looping=False)` Decorator for a synchronous function.
+* `asyn(ident, max_instances=1, verbose=True, looping=False)` Decorator for a
+coroutine. Can monitor multiple task instances.
+
 # 2. Monitoring
 
 An application to be monitored should first define the interface:
@@ -203,8 +223,8 @@ def main():
     monitor.init()
     # rest of application code
 ```
-This ensures that the Pico code assumes a known state, even if a prior run
-crashed, was interrupted or failed.
+This ensures that the Pico code assumes a known state, even if in a prior run
+the DUT crashed, was interrupted or failed.
 
 ## 2.1 Validation of idents
 
@@ -212,11 +232,119 @@ Re-using idents would lead to confusing behaviour. If an ident is out of range
 or is assigned to more than one coroutine an error message is printed and
 execution terminates.
 
-# 3. Monitoring asyncio code
+# 3. Monitoring arbitrary code
 
-## 3.1 Monitoring coroutines
+The following features may be used to characterise synchronous or asynchronous
+applications by causing Pico pin changes at specific points in code execution.
 
-Coroutines to be monitored are prefixed with the `@monitor.asyn` decorator:
+The following are provided:  
+  * A `Monitor` context manager enables function monitoring to be restricted to
+ specific calls.
+ * A `trigger` closure which issues a brief pulse on the Pico or can set and
+ clear the pin on demand.
+ * A `sync` decorator for synchronous functions or methods. It monitors every
+ call to the function.
+
+ ## 3.1 The Monitor context manager
+
+This may be used to monitor arbitrary segments of code. A context manager may
+be used in a looping construct, consequently the ident  is only checked for
+conflicts when the CM is first instantiated.
+
+Usage:
+```python
+from monitor import Monitor
+def foo():
+    while True:
+        # code
+        with Monitor(5):  # ident 5 will be asserted for the duration
+             # monitored code section
+ ```
+
+It is inadvisable to use the context manager with code that calls a function
+having the `mon_func` decorator. Behaviour of pins and reports can be confusing.
+
+## 3.2 The trigger timing marker
+
+The `trigger` closure is intended for timing blocks of code. A closure instance
+is created by passing the ident. If the instance is run with no args a brief
+(~80μs) pulse will occur on the Pico pin. If `True` is passed, the pin will go
+high until `False` is passed.
+
+The closure should be instantiated in the outermost scope. The instance may be
+called in a hard ISR context: this facilitates measuring the effect on system
+performance of ISR overhead. Also measuring the time between a hard ISR running
+and a section of code responding. See `tests/isr.py`.
+```python
+trig = monitor.trigger(10)  # Associate trig with ident 10.
+
+def foo():
+    trig()  # Pulse ident 10, GPIO 13
+
+def bar():
+    trig(True)  # set pin high
+    # code omitted
+    trig(False)  # set pin low
+```
+
+## 3.3 The sync decorator
+
+This decorator causes a GPIO to go high when the function is called and to go
+low when it terminates. This is intended for synchronous functions: see the
+`asyn` decorator for coroutines. The following example will activate GPIO 26
+(associated with ident 20) for the duration of every call to `sync_func()`:
+```python
+@monitor.sync(20)
+def sync_func():
+    pass
+```
+Decorator args:
+ 1. `ident`
+ 2. `looping=False` Set `True` if the decorator is called repeatedly e.g. in a
+ nested function or method. The `True` value ensures validation of the ident
+ occurs once only when the decorator first runs. Usage example:
+
+```py
+def foo():
+    @monitor.sync(20, looping=True)
+    def bar():
+        # code
+    #
+```
+Without `looping=True`, validation would record a re-use of ident 20 the second
+time `foo` was called.
+
+## 3.4 Timing of code segments
+
+The `monitor_pico.py` module running on the attached Pico can detect periods of
+inactivity on channel 0. This is primarily intended for the detection of hogging
+in asynchronous code, but can be re-purposed to detect slow running of any code
+block. This is useful if the duration varies in real time. The Pico can be
+configured to cause a message to be printed and a trigger pulse to be generated
+whenever the execution time exceeds the prior maximum. A scope or logic analyser
+may be triggered by this pulse allowing the state of other components of the
+system to be checked.
+
+This is done by re-purposing ident 0:
+```python
+import monitor
+monitor.init()  # Do not specify hog detection
+def foo():
+    # code omitted
+    with monitor.Monitor(0):  # Start of code block
+        # Monitored code omitted
+```
+See [section 5.5](./README.md#55-timing-of-code-segments) for the Pico usage
+and demo `syn_time.py`.
+
+# 4. Monitoring asyncio code
+
+## 4.1 Monitoring coroutines
+
+This takes account of the fact that a single coroutine may be used to launch
+multiple concurrent tasks. Where this occurs the tasks may be monitored on a set
+of consecutive idents. Coroutines to be monitored are prefixed with the
+`@monitor.asyn` decorator:
 ```python
 @monitor.asyn(2, 3)
 async def my_coro():
@@ -230,14 +358,25 @@ The decorator positional args are as follows:
  task to be independently monitored (default 1).
  3. `verbose=True` If `False` suppress the warning which is printed on the DUT
  if the instance count exceeds `max_instances`.
- 4. `looping=False` Set `True` if the decorator is called repeatedly e.g.
- decorating a nested function or method. The `True` value ensures validation of
- the ident occurs once only when the decorator first runs.
+ 4. `looping=False` Set `True` if the **decorator** is called repeatedly e.g.
+ when decorating a nested function or method. The `True` value ensures
+ validation of the ident occurs once only when the decorator first runs. Example
+ of a case where `looping` should be specified:
+
+```py
+async def foo():
+    @monitor.asyn(20, looping=True)
+    async def bar():
+        # code
+    #
+```
+Without `looping=True`, validation would record a re-use of ident 20 the second
+time `foo` was run.
 
 Whenever the coroutine runs, a pin on the Pico will go high, and when the code
 terminates it will go low. This enables the behaviour of the system to be
-viewed on a logic analyser or via console output on the Pico. This behavior
-works whether the code terminates normally, is cancelled or has a timeout.
+viewed on a logic analyser or via console output on the Pico. This behaviour
+occurs whether the code terminates normally, is cancelled or has a timeout.
 
 In the example above, when `my_coro` starts, the pin defined by `ident==2`
 (GPIO 5) will go high. When it ends, the pin will go low. If, while it is
@@ -254,7 +393,7 @@ starts and will not go low until all have ended. The purpose of the warning is
 because the existence of multiple instances may be unexpected behaviour in the
 application under test - it does not imply a problem with the monitor.
 
-## 3.2 Detecting CPU hogging
+## 4.2 Detecting CPU hogging
 
 A common cause of problems in asynchronous code is the case where a task blocks
 for a period, hogging the CPU, stalling the scheduler and preventing other
@@ -278,11 +417,11 @@ scheduler. It will therefore be scheduled in round-robin fashion at speed. If
 long gaps appear in the pulses on GPIO3, other tasks are hogging the CPU.
 Usage of this is optional. To use, issue
 ```python
-import asyncio as asyncio
+import asyncio
 import monitor
-# code omitted
-asyncio.create_task(monitor.hog_detect())
-# code omitted
+async def main():  # The application's entry point
+    monitor.init(True)  # True arg initiates hog detection on ident 0
+    # code omitted
 ```
 To aid in detecting the gaps in execution, in its default mode the Pico code
 implements a timer. This is retriggered by activity on `ident=0`. If it times
@@ -291,95 +430,6 @@ message "Hog". The pulse can be used to trigger a scope or logic analyser. The
 duration of the timer may be adjusted. Other modes of hog detection are also
 supported, notably producing a trigger pulse only when the prior maximum was
 exceeded. See [section 5](./README.md#5-Pico).
-
-# 4. Monitoring arbitrary code
-
-The following features may be used to characterise synchronous or asynchronous
-applications by causing Pico pin changes at specific points in code execution.
-
-The following are provided:  
- * A `sync` decorator for synchronous functions or methods: like `asyn` it
- monitors every call to the function.
- * A `mon_call` context manager enables function monitoring to be restricted to
- specific calls.
- * A `trigger` closure which issues a brief pulse on the Pico or can set and
- clear the pin on demand.
-
-## 4.1 The sync decorator
-
-This works as per the `@async` decorator, but with no `max_instances` arg. The
-following example will activate GPIO 26 (associated with ident 20) for the
-duration of every call to `sync_func()`:
-```python
-@monitor.sync(20)
-def sync_func():
-    pass
-```
-Decorator args:
- 1. `ident`
- 2. `looping=False` Set `True` if the decorator is called repeatedly e.g. in a
- nested function or method. The `True` value ensures validation of  the ident
- occurs once only when the decorator first runs.
-
-## 4.2 The mon_call context manager
-
-This may be used to monitor a function only when called from specific points in
-the code. Since context managers may be used in a looping construct the ident
-is only checked for conflicts when the CM is first instantiated.
-
-Usage:
-```python
-def another_sync_func():
-    pass
-
-with monitor.mon_call(22):
-    another_sync_func()
-```
-
-It is advisable not to use the context manager with a function having the
-`mon_func` decorator. The behaviour of pins and reports are confusing.
-
-## 4.3 The trigger timing marker
-
-The `trigger` closure is intended for timing blocks of code. A closure instance
-is created by passing the ident. If the instance is run with no args a brief
-(~80μs) pulse will occur on the Pico pin. If `True` is passed, the pin will go
-high until `False` is passed.
-
-The closure should be instantiated in the outermost scope. The instance may be
-called in a hard ISR context: this facilitates measuring the effect on system
-performance of ISR overhead. Also measuring the time between a hard ISR running
-and a section of code responding. See `tests/isr.py`.
-```python
-trig = monitor.trigger(10)  # Associate trig with ident 10.
-
-def foo():
-    trig()  # Pulse ident 10, GPIO 13
-
-def bar():
-    trig(True)  # set pin high
-    # code omitted
-    trig(False)  # set pin low
-```
-## 4.4 Timing of code segments
-
-It can be useful to time the execution of a specific block of code especially
-if the duration varies in real time. It is possible to cause a message to be
-printed and a trigger pulse to be generated whenever the execution time exceeds
-the prior maximum. A scope or logic analyser may be triggered by this pulse
-allowing the state of other components of the system to be checked.
-
-This is done by re-purposing ident 0 as follows:
-```python
-trig = monitor.trigger(0)
-def foo():
-    # code omitted
-    trig(True)  # Start of code block
-    # code omitted
-    trig(False)
-```
-See [section 5.5](./README.md#55-timing-of-code-segments) for the Pico usage
-and demo `syn_time.py`.
 
 # 5. Pico
 
@@ -496,7 +546,7 @@ from monitor_pico import run, WIDTH
 run((20, WIDTH))  # Ignore widths < 20ms.
 ```
 Assuming that ident 0 is used as described in
-[section 4.4](./README.md#44-timing-of-code-segments) a trigger pulse on GPIO28
+[section 3.4](./README.md#34-timing-of-code-segments) a trigger pulse on GPIO28
 will occur each time the time taken exceeds both 20ms and its prior maximum. A
 message with the actual width is also printed whenever this occurs.
 
