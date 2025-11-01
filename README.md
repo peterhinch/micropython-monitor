@@ -11,6 +11,7 @@ module from this repo which displays the behaviour of the DUT by pin changes and
 optional print statements. A view of the realtime behaviour of the code may be
 acquired with a logic analyser or scope; in the absence of test gear valuable
 information can be gleaned at the Pico command line.
+![Image](./images/schema.png)
 
 Code for an [analyser back-end](./ANALYSER.md) is provided for users lacking a
 logic analyser or multi-channel scope:  
@@ -87,11 +88,19 @@ pre-trigger information the cause of the problem can be isolated.
 
 ## 1.2 Pre-requisites
 
-The DUT must run firmware V1.19 or later. The Pico must run V1.20 or later.
+The DUT must run firmware V1.19 or later. The Pico must run V1.20 or later. Pico
+hardware may be RP2040 (original Pico) or better.
 
 ## 1.3 Installation
 
-Copy `monitor.py` to the DUT filesystem. Copy `monitor_pico.py` to the Pico.
+On device under test:
+```bash
+$ mpremote mip install "github:peterhinch/micropython-monitor"
+```
+On Pico:
+```bash
+$ mpremote mip install "github:peterhinch/micropython-monitor/pico"
+```
 
 ## 1.4 UART connection
 
@@ -431,6 +440,54 @@ duration of the timer may be adjusted. Other modes of hog detection are also
 supported, notably producing a trigger pulse only when the prior maximum was
 exceeded. See [section 5](./README.md#5-Pico).
 
+# 4.3 Monitoring Lock instances
+
+Multiple tasks may compete for a `Lock`. A `MonLock`, subclassed from `Lock`,
+tracks the `Lock` state setting a Pico pin high when the lock is set, and low
+when it is released. In typical use, each competing task uses an asynchronous
+context manager to control the common `Lock`. In this case the pin goes low
+when the last pending task terminates.
+
+Usage:
+```python
+import asyncio
+import monitor
+# my_lock = asyncio.Lock()
+my_lock = monitor.MonLock(5)  # Replace unmonitored Lock with monitor on GPIO 8
+# code omitted
+async def some_task():
+    async with my_lock:  # If no other task competes for the Lock, Pico GPIO 8
+        await asyncio.sleep(1)  # will go high for 1s
+```
+
+# 4.4 Monitoring Event instances
+
+An `Event` may be set by multiple tasks and more than one task may wait on it.
+A `MonEvent`, subclassed from `Event`, tracks the `Event` state. It sets a Pico
+pin high when it is set and low when it is cleared. If a task set an `Event`
+which is already set, the pin will remain high; likewise no state change will
+occur if an already cleared `Event` is cleared.
+
+Usage:
+```python
+import asyncio
+import monitor
+monitor.set_device(UART(2, 1_000_000))  # UART must be 1MHz
+# my_event = asyncio.Event()
+my_event = monitor.MonEvent(5)  # Replaces normal Event above
+# code omitted
+async def waiter():
+    await my_event.wait()
+    my_event.clear()
+
+async def main():
+    monitor.init()
+    asyncio.create_task(waiter())
+    await asyncio.sleep(1)
+    my_event.set()  # Pico GPIO 8 goes high, then goes low when waiter runs
+    await asyncio.sleep(1)
+```
+
 # 5. Pico
 
 # 5.1 Pico pin mapping
@@ -468,6 +525,14 @@ identified:
 |  20     |  26  |  31  |
 |  21     |  27  |  32  |
 | trigger |  28  |  34  |
+
+As a convenience the file `pins.py` is provided. This provides two functions:
+* `pico(p:int) -> int` Passed a Pico PCB pin no. returns an ident.
+* `gp(p:int) -> int` Accepts an RP2xxx GP no, returns an ident.
+This allows code such as:
+```python
+trig = monitor.trigger(pico(7))  # Monitor on Pico PCB pin 7
+```
 
 ## 5.2 The Pico code
 

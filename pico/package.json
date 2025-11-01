@@ -1,0 +1,6 @@
+{
+  "urls": [
+    ["monitor_pico.py", "github:peterhinch/micropython-monitor/monitor_pico.py"]
+  ],
+  "version": "0.1"
+}

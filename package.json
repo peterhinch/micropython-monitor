@@ -1,0 +1,7 @@
+{
+  "urls": [
+    ["monitor.py", "github:peterhinch/micropython-monitor/monitor.py"],
+    ["pins.py", "github:peterhinch/micropython-monitor/pins.py"]
+  ],
+  "version": "0.1"
+}

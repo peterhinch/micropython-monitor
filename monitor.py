@@ -193,3 +193,39 @@ def trigger(ident):
             _write(ident + (0x40 if state else 0x60))
 
     return wrapped
+
+
+# Track the state of a Lock instance
+class MonLock(asyncio.Lock):
+    def __init__(self, ident):
+        _validate(ident)  # Cannot instantiate in a loop
+        self.ident = ident
+        super().__init__()
+
+    async def acquire(self):
+        if not self.state:  # Currently unlocked
+            _write(0x40 + self.ident)  # Lock will be set
+        await super().acquire()
+
+    def release(self):
+        super().release()  # But a pending task may be scheduled
+        if not self.state:  # No pending task: the lock is free.
+            _write(0x60 + self.ident)
+
+
+# Track the state of an Event instance
+class MonEvent(asyncio.Event):
+    def __init__(self, ident):
+        _validate(ident)
+        self.ident = ident
+        super().__init__()
+
+    def set(self):
+        if not self.state:  # Currently unset
+            _write(0x40 + self.ident)  # Event will be set
+        super().set()
+
+    def clear(self):
+        if self.state:  # Currently set
+            _write(0x60 + self.ident)
+        super().clear()
