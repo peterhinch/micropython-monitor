@@ -15,14 +15,14 @@ information can be gleaned at the Pico command line.
 
 1. [Introduction](./README.md#1-introduction)  
  1.1 [Concepts](./README.md#11-concepts)  
- 1.2 [Pre-requisites](./README.md#2-pre-requisites)  
+ 1.2 [Pre-requisites](./README.md#12-pre-requisites)  
  1.3 [Installation](./README.md#13-installation)  
  1.4 [UART connection](./README.md#14-uart-connection) Usual way to connect to DUT.  
  1.5 [SPI connection](./README.md#15-spi-connection) Alternative to a UART.  
  1.6 [Quick start](./README.md#16-quick-start)  
  1.7 [monitor module methods](./README.md#17-monitor-module-methods)  
-2. [Monitoring](./README.md#)  
- 2.1 [Validation of idents](./README.md#)  
+2. [Monitoring](./README.md#2-monitoring)  
+ 2.1 [Validation of idents](./README.md#21-validation-of-idents)  
 3. [Monitoring arbitrary code](./README.md#3-monitoring-arbitrary-code)  
  3.1 [The Monitor context manager](./README.md#31-the-monitor-context-manager) Time a code block.  
  3.2 [The trigger timing marker](./README.md#32-the-trigger-timing-marker) Issue timing pulses.  
@@ -278,6 +278,8 @@ Re-using idents would lead to confusing behaviour. If an ident is out of range
 or is assigned to more than one coroutine an error message is printed and
 execution terminates.
 
+#### [Top](./README.md#a-monitor-for-realtime-micropython-code)  
+
 # 3. Monitoring arbitrary code
 
 The following features may be used to characterise synchronous or asynchronous
@@ -385,6 +387,8 @@ def foo():
 ```
 See [section 5.5](./README.md#55-timing-of-code-segments) for the Pico usage
 and demo `syn_time.py`.
+
+#### [Top](./README.md#a-monitor-for-realtime-micropython-code)  
 
 # 4. Monitoring asyncio code
 
@@ -527,6 +531,7 @@ async def main():
     my_event.set()  # Pico GPIO 8 goes high, then goes low when waiter runs
     await asyncio.sleep(1)
 ```
+#### [Top](./README.md#a-monitor-for-realtime-micropython-code)  
 
 # 5. The Pico
 
@@ -659,6 +664,8 @@ Assuming that ident 0 is used as described in
 will occur each time the time taken exceeds both 20ms and its prior maximum. A
 message with the actual width is also printed whenever this occurs.
 
+#### [Top](./README.md#a-monitor-for-realtime-micropython-code)  
+
 # 6. Test and demo scripts
 
 The following image shows the `quick_test.py` code being monitored at the point
@@ -705,6 +712,8 @@ in `hog_detect` show the periods of deliberate CPU hogging.
 pulse being generated every time the period exceeds its prior maximum.
 
 ![Image](./images/syn_time.jpg)
+
+#### [Top](./README.md#a-monitor-for-realtime-micropython-code)  
 
 # 7. Internals
 
@@ -785,6 +794,8 @@ will ignore the idle level. An incoming 0 will be interpreted as a framing
 error because of the absence of a stop bit. In practice the Pico UART returns
 `b'\x00'` when this occurs; `monitor.py` ignores such characters. A monitored
 ESP8266 behaves identically to other platforms and can be rebooted at will.
+
+#### [Top](./README.md#a-monitor-for-realtime-micropython-code)  
 
 # 8. A hardware implementation
 
