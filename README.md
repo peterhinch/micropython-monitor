@@ -1,6 +1,6 @@
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
-# 1. A monitor for realtime MicroPython code
+# A monitor for realtime MicroPython code
 
 This library provides a means of examining the behaviour of a running system.
 It is intended for profiling code whose behaviour may change dynamically such as
@@ -12,6 +12,41 @@ optional print statements. A view of the realtime behaviour of the code may be
 acquired with a logic analyser or scope; in the absence of test gear valuable
 information can be gleaned at the Pico command line.
 ![Image](./images/schema.png)
+
+1. [Introduction](./README.md#1-introduction)  
+ 1.1 [Concepts](./README.md#11-concepts)  
+ 1.2 [Pre-requisites](./README.md#2-pre-requisites)  
+ 1.3 [Installation](./README.md#13-installation)  
+ 1.4 [UART connection](./README.md#14-uart-connection) Usual way to connect to DUT.  
+ 1.5 [SPI connection](./README.md#15-spi-connection) Alternative to a UART.  
+ 1.6 [Quick start](./README.md#16-quick-start)  
+ 1.7 [monitor module methods](./README.md#17-monitor-module-methods)  
+2. [Monitoring](./README.md#)  
+ 2.1 [Validation of idents](./README.md#)  
+3. [Monitoring arbitrary code](./README.md#3-monitoring-arbitrary-code)  
+ 3.1 [The Monitor context manager](./README.md#31-the-monitor-context-manager) Time a code block.  
+ 3.2 [The trigger timing marker](./README.md#32-the-trigger-timing-marker) Issue timing pulses.  
+ 3.3 [The sync decorator](./README.md#33-the-sync-decorator) Pulse for the duration of a function or method.  
+ 3.4 [Timing of code segments](./README.md#34-timing-of-code-segments) Pulse if a code block runs too slowly.  
+4. [Monitoring asyncio code](./README.md#4-monitoring-asyncio-code)  
+ 4.1 [Monitoring coroutines](./README.md#41-monitoring-coroutines) Pulse for the duration of a coroutine.  
+ 4.2 [Detecting CPU hogging](./README.md#42-detecting-cpu-hogging)  
+ 4.3 [Monitoring Lock instances](./README.md#43-monitoring-lock-instances) Pulse while a Lock is held.  
+ 4.4 [Monitoring Event instances](./README.md#44monitoring-event-instances) Pulse while an Event is set.  
+5. [The pico](./README.md#5-the-pico) Introduction to the Pico module.   
+ 5.1 [Pico pin mapping](./README.md#51-pico-pin-mapping)  
+ 5.2 [The Pico code](./README.md#52-the-pico-code)  
+ 5.3 [The Pico run function](./README.md#-the-pico-run-function) How to configure the monitoring module.  
+ 5.4 [Advanced hog detection](./README.md#54-advanced-hog-detection)  
+ 5.5 [Timing of code segments](./README.md#55-timing-of-code-segments)  
+6. [Test and demo scripts](./README.md#6-test-and-demo-scripts)  
+7. [Internals](./README.md#7-internals)  
+ 7.1 [Performance and design notes](./README.md#71-performance-and-design-notes)  
+ 7.2 [How it works](./README.md#72-how-it-works)  
+ 7.3 [ESP8266 note](./README.md#73-esp8266-note)  
+8. [A hardware implementation](./README.md#8-a-hardware-implementation)  
+
+# 1. Introduction
 
 Code for an [analyser back-end](./ANALYSER.md) is provided for users lacking a
 logic analyser or multi-channel scope:  
@@ -194,7 +229,7 @@ period 200ms should be observed on Pico GPIO 4 (pin 6).
 Example script `quick_test.py` provides a usage example. It may be adapted to
 use a UART or SPI interface: see commented-out code.
 
-## 1.7 monitor.py module methods
+## 1.7 monitor module methods
 
 Initialisation:
 
@@ -208,6 +243,8 @@ Running (`0 <= ident <=21`):
 * `sync(ident, looping=False)` Decorator for a synchronous function.
 * `asyn(ident, max_instances=1, verbose=True, looping=False)` Decorator for a
 coroutine. Can monitor multiple task instances.
+
+#### [Top](./README.md#a-monitor-for-realtime-micropython-code)  
 
 # 2. Monitoring
 
@@ -295,6 +332,9 @@ def bar():
     # code omitted
     trig(False)  # set pin low
 ```
+If an arg is passed a call setting the pin high must be paired with one setting
+it low again otherwise confusing behaviour will occur. See
+[Section 7.2](./README.md#72-how-it-works).
 
 ## 3.3 The sync decorator
 
@@ -488,7 +528,11 @@ async def main():
     await asyncio.sleep(1)
 ```
 
-# 5. Pico
+# 5. The Pico
+
+Pico hardware may be RP2040 (original Pico) or better. Code is `monitor_pico.py`
+which is started by the module method `run()` and configured by passing args to
+that call. The code runs forever, and may optionally produce printed output.
 
 # 5.1 Pico pin mapping
 
