@@ -16,9 +16,9 @@ information can be gleaned at the Pico command line.
 1. [Introduction](./README.md#1-introduction)  
  1.1 [Concepts](./README.md#11-concepts)  
  1.2 [Pre-requisites](./README.md#12-pre-requisites)  
- 1.3 [Installation](./README.md#13-installation)  
+ 1.3 [Installation](./README.md#13-installation) Using mpremote mip.  
  1.4 [UART connection](./README.md#14-uart-connection) Usual way to connect to DUT.  
- 1.5 [SPI connection](./README.md#15-spi-connection) Alternative to a UART.  
+ 1.5 [SPI connection](./README.md#15-spi-connection) SPI alternative to a UART.  
  1.6 [Quick start](./README.md#16-quick-start)  
  1.7 [monitor module methods](./README.md#17-monitor-module-methods)  
 2. [Monitoring](./README.md#2-monitoring)  
@@ -41,10 +41,10 @@ information can be gleaned at the Pico command line.
  5.5 [Timing of code segments](./README.md#55-timing-of-code-segments)  
 6. [Test and demo scripts](./README.md#6-test-and-demo-scripts)  
 7. [Internals](./README.md#7-internals)  
- 7.1 [Performance and design notes](./README.md#71-performance-and-design-notes)  
- 7.2 [How it works](./README.md#72-how-it-works)  
- 7.3 [ESP8266 note](./README.md#73-esp8266-note)  
-8. [A hardware implementation](./README.md#8-a-hardware-implementation)  
+ 7.1 [Performance and design notes](./README.md#71-performance-and-design-notes) Design rationale.  
+ 7.2 [How it works](./README.md#72-how-it-works) For those wanting to adapt monitor_pico.py.  
+ 7.3 [ESP8266 note](./README.md#73-esp8266-note) Use of the tx-only UART.  
+8. [A hardware implementation](./README.md#8-a-hardware-implementation) A PCB implementation.  
 
 # 1. Introduction
 
